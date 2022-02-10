@@ -126,3 +126,18 @@ export async function createStatus(name: string) {
 		VALUES (?)
 	`, name);
 }
+
+export async function deleteStatus(id: number) {
+	const db = await getDB();
+
+	await db.run(`
+		UPDATE task
+		SET status_id = ?
+		WHERE status_id = ?
+	`, DefaultStatus.New, id)
+
+	await db.run(`
+		DELETE FROM status
+		WHERE id = ?
+	`, id);
+}

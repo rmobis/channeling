@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { App } from '@slack/bolt';
-import { updateTaskStatus, storeTask, createStatus } from './db';
+import { updateTaskStatus, storeTask, createStatus, deleteStatus } from './db';
 import { republishHomeView } from './util';
 import { buildStatusManagementView } from './view';
 
@@ -13,7 +13,7 @@ export enum CustomAction {
 	UpdateTaskStatus = 'update-task-status',
 	DeleteStatus = 'delete-status',
 	MainOverflow = 'main-overflow',
-	AddStatus = "AddStatus"
+	AddStatus = 'add-status'
 }
 
 const app = new App({
@@ -91,6 +91,30 @@ app.action(CustomAction.AddStatus, async ({ ack, action, body }) => {
 
 	await ack();
 	await createStatus(action.value);
+
+	await app.client.views.update({
+		view_id: body.view.id,
+		view: await buildStatusManagementView()
+	});
+
+	await republishHomeView(body.user.id);
+});
+
+app.action(CustomAction.DeleteStatus, async ({ ack, action, body }) => {
+	if (action.type !== 'button') {
+		return;
+	}
+
+	if (body.type !== 'block_actions') {
+		return;
+	}
+
+	if (!body.view) {
+		return;
+	}
+
+	await ack();
+	await deleteStatus(Number(action.value));
 
 	await app.client.views.update({
 		view_id: body.view.id,

@@ -91,6 +91,7 @@ export async function buildStatusManagementView(): Promise<ModalView> {
 				element: {
 					type: 'plain_text_input',
 					action_id: CustomAction.AddStatus,
+					focus_on_load: true,
 				},
 				label: {
 					type: 'plain_text',
