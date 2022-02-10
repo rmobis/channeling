@@ -39,6 +39,17 @@ async function getDB() {
 }
 
 async function initDB(db: Database) {
+	await db.get("PRAGMA foreign_keys = ON");
+
+	await db.exec(`
+		CREATE TABLE
+		IF NOT EXISTS
+		status (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL
+		)
+	`);
+
 	await db.exec(`
 		CREATE TABLE
 		IF NOT EXISTS
@@ -47,16 +58,8 @@ async function initDB(db: Database) {
 			channel TEXT NOT NULL,
 			ts TEXT NOT NULL,
 			status_id INTEGER DEFAULT ${DefaultStatus.New} NOT NULL,
-			tags TEXT DEFAULT "" NOT NULL
-		)
-	`);
-
-	await db.exec(`
-		CREATE TABLE
-		IF NOT EXISTS
-		status (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			name TEXT NOT NULL
+			tags TEXT DEFAULT "" NOT NULL,
+			FOREIGN KEY (status_id) REFERENCES status(id) ON DELETE SET DEFAULT
 		)
 	`);
 
@@ -129,12 +132,6 @@ export async function createStatus(name: string) {
 
 export async function deleteStatus(id: number) {
 	const db = await getDB();
-
-	await db.run(`
-		UPDATE task
-		SET status_id = ?
-		WHERE status_id = ?
-	`, DefaultStatus.New, id)
 
 	await db.run(`
 		DELETE FROM status
