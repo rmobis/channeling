@@ -109,7 +109,7 @@ async function buildTaskBlocks(task: Task): Promise<(Block | KnownBlock)[]> {
 
 	const tagsMkdwn = task.tags.map((tag) => `\`${tag}\``).join(' ');
 	const statusStyling = STATUS_STYLING_MAP[task.status] ?? '';
-	const statusOptions = await buildStatusOptions(task);
+	const statusOptions = await buildStatusSelectOptions(task);
 
 	if (!message || !profile) {
 		return [];
@@ -161,7 +161,7 @@ async function buildTaskBlocks(task: Task): Promise<(Block | KnownBlock)[]> {
 	];
 }
 
-async function buildStatusOptions(task: Task): Promise<PlainTextOption[]> {
+async function buildStatusSelectOptions(task: Task): Promise<PlainTextOption[]> {
 	// if this were real world code, we should probably cache this
 	const statuses = await getStatus();
 
