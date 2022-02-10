@@ -20,7 +20,7 @@ export interface Status {
 	name: string;
 }
 
-enum DEFAULT_STATUS {
+export enum DefaultStatus {
 	New = 0,
 	Completed = 1
 }
@@ -46,7 +46,7 @@ async function initDB(db: Database) {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			channel TEXT NOT NULL,
 			ts TEXT NOT NULL,
-			status_id INTEGER DEFAULT ${DEFAULT_STATUS.New} NOT NULL,
+			status_id INTEGER DEFAULT ${DefaultStatus.New} NOT NULL,
 			tags TEXT DEFAULT "" NOT NULL
 		)
 	`);
@@ -70,7 +70,7 @@ async function initDB(db: Database) {
 		VALUES
 			(?, "New"),
 			(?, "Completed")
-	`, DEFAULT_STATUS.New, DEFAULT_STATUS.Completed);
+	`, DefaultStatus.New, DefaultStatus.Completed);
 }
 
 export async function storeTask({ channel, ts, tags }: Omit<Task, 'id' | 'status' | 'status_id'>) {
@@ -109,7 +109,7 @@ export async function updateTaskStatus(taskId: number, statusId: number) {
 	`, statusId, taskId);
 }
 
-export async function getStatuses(): Promise<Status[]> {
+export async function getStatus(): Promise<Status[]> {
 	const db = await getDB();
 
 	return await db.all<Status[]>(`

@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { App } from '@slack/bolt';
 import { updateTaskStatus, storeTask } from './db';
 import { republishHomeView } from './util';
+import { buildStatusManagementView } from './view';
 
 const REACTIONS_MAP: Record<string, string[]> = {
 	ladybug: ['bug'],
@@ -50,11 +51,27 @@ app.action('update_task_status', async ({ ack, action, body }) => {
 
 	await updateTaskStatus(Number(taskId), Number(statusId));
 	await ack();
+
 	await republishHomeView(body.user.id);
+});
+
+app.action('main-overflow', async ({ ack, body, action }) => {
+	if (body.type !== 'block_actions') {
+		return;
+	}
+
+	await ack();
+	await app.client.views.open({
+		trigger_id: body.trigger_id,
+		view: await buildStatusManagementView()
+	});
+
 });
 
 (async () => {
 	await app.start();
+
+	await republishHomeView('U26DB2A2W');
 
 	console.log('⚡️ Channeling is running!');
 })();
