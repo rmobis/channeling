@@ -10,10 +10,20 @@ export interface Task {
 	id: number;
 	channel: string;
 	ts: string;
+	status_id: number;
 	status: string;
 	tags: string[];
 }
 
+export interface Status {
+	id: number;
+	name: string;
+}
+
+enum DEFAULT_STATUS {
+	New = 0,
+	Completed = 1
+}
 
 async function getDB() {
 	if (!__db) {
@@ -36,13 +46,34 @@ async function initDB(db: Database) {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			channel TEXT NOT NULL,
 			ts TEXT NOT NULL,
-			status TEXT DEFAULT "New" NOT NULL,
+			status_id INTEGER DEFAULT ${DEFAULT_STATUS.New} NOT NULL,
 			tags TEXT DEFAULT "" NOT NULL
 		)
 	`);
+
+	await db.exec(`
+		CREATE TABLE
+		IF NOT EXISTS
+		status (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL
+		)
+	`);
+
+	await db.run(`
+		INSERT OR IGNORE
+		INTO
+		status (
+			id,
+			name
+		)
+		VALUES
+			(?, "New"),
+			(?, "Completed")
+	`, DEFAULT_STATUS.New, DEFAULT_STATUS.Completed);
 }
 
-export async function storeTask({ channel, ts, tags }: Omit<Task, 'id' | 'status'>) {
+export async function storeTask({ channel, ts, tags }: Omit<Task, 'id' | 'status' | 'status_id'>) {
 	const db = await getDB();
 
 	await db.run(`
@@ -55,8 +86,11 @@ export async function getTasks(): Promise<Task[]> {
 	const db = await getDB();
 
 	const res = await db.all(`
-		SELECT *
+		SELECT
+			task.*,
+			status.name AS status
 		FROM task
+		LEFT JOIN status ON task.status_id = status.id
 	`);
 
 	return res.map(({ tags, ...rest }) => ({
@@ -65,12 +99,21 @@ export async function getTasks(): Promise<Task[]> {
 	}));
 }
 
-export async function completeTask(id: number) {
+export async function updateTaskStatus(taskId: number, statusId: number) {
 	const db = await getDB();
 
 	await db.run(`
 		UPDATE task
-		SET status = "Completed"
+		SET status_id = ?
 		WHERE id = ?
-	`, id);
+	`, statusId, taskId);
+}
+
+export async function getStatuses(): Promise<Status[]> {
+	const db = await getDB();
+
+	return await db.all<Status[]>(`
+		SELECT id, name
+		FROM status
+	`);
 }

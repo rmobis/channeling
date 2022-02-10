@@ -1,5 +1,5 @@
-import { KnownBlock, HomeView, Block } from '@slack/bolt';
-import { getTasks, Task } from './db';
+import { KnownBlock, HomeView, Block, PlainTextOption } from '@slack/bolt';
+import { getStatuses, getTasks, Task } from './db';
 import app from './index';
 
 const STATUS_STYLING_MAP: Record<string, string> = {
@@ -67,6 +67,7 @@ async function buildTaskBlocks(task: Task): Promise<(Block | KnownBlock)[]> {
 
 	const tagsMkdwn = task.tags.map(tag => `\`${tag}\``).join(' ');
 	const statusStyling = STATUS_STYLING_MAP[task.status];
+	const statusOptions = await buildStatusOptions(task);
 
 	if (!message || !profile) {
 		return [];
@@ -80,15 +81,14 @@ async function buildTaskBlocks(task: Task): Promise<(Block | KnownBlock)[]> {
 				text: `${message.text}`
 			},
 			accessory: {
-				type: 'button',
-				style: 'primary',
-				text: {
+				type: 'static_select',
+				placeholder: {
 					type: 'plain_text',
-					emoji: true,
-					text: 'Complete'
+					text: 'Choose new status...',
+					emoji: true
 				},
-				action_id: 'complete_task',
-				value: task.id.toString()
+				action_id: 'update_task_status',
+				options: statusOptions,
 			}
 		},
 		{
@@ -117,4 +117,22 @@ async function buildTaskBlocks(task: Task): Promise<(Block | KnownBlock)[]> {
 			type: 'divider'
 		}
 	];
+}
+
+async function buildStatusOptions(task: Task): Promise<PlainTextOption[]> {
+	// if this were real world code, we should probably cache this
+	const statuses = await getStatuses();
+
+	const withoutCurrent = statuses.filter(status => status.id !== task.status_id);
+
+	return withoutCurrent.map(status => ({
+		text: {
+			type: 'plain_text',
+			text: status.name,
+			emoji: true
+		},
+		// this is kind of a hack because we need to pass two bits of info to the action; not sure
+		// if there's a better way
+		value: `${task.id}:${status.id}`
+	}));
 }

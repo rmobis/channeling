@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { App } from '@slack/bolt';
-import { completeTask, storeTask } from './db';
+import { updateTaskStatus, storeTask } from './db';
 import { republishHomeView } from './util';
 
 const REACTIONS_MAP: Record<string, string[]> = {
@@ -41,12 +41,14 @@ app.event('app_home_opened', async ({ event }) => {
 	await republishHomeView(event.user);
 });
 
-app.action('complete_task', async ({ ack, action, body }) => {
-	if (action.type !== 'button') {
+app.action('update_task_status', async ({ ack, action, body }) => {
+	if (action.type !== 'static_select') {
 		return;
 	}
 
-	await completeTask(Number(action.value));
+	const [taskId, statusId] = action.selected_option.value.split(':');
+
+	await updateTaskStatus(Number(taskId), Number(statusId));
 	await ack();
 	await republishHomeView(body.user.id);
 });
