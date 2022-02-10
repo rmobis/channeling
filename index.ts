@@ -1,8 +1,7 @@
 import 'dotenv/config';
 import { App } from '@slack/bolt';
 import { updateTaskStatus, storeTask, createStatus, deleteStatus } from './db';
-import { republishHomeView } from './util';
-import { buildStatusManagementView } from './view';
+import { republishHomeView, showModal } from './util';
 
 const REACTIONS_MAP: Record<string, string[]> = {
 	ladybug: ['bug'],
@@ -63,17 +62,13 @@ app.action(CustomAction.UpdateTaskStatus, async ({ ack, action, body }) => {
 	await republishHomeView(body.user.id);
 });
 
-app.action(CustomAction.MainOverflow, async ({ ack, action, body }) => {
+app.action(CustomAction.MainOverflow, async ({ ack, body }) => {
 	if (body.type !== 'block_actions') {
 		return;
 	}
 
 	await ack();
-	await app.client.views.open({
-		trigger_id: body.trigger_id,
-		view: await buildStatusManagementView()
-	});
-
+	await showModal({ triggerId: body.trigger_id });
 });
 
 app.action(CustomAction.AddStatus, async ({ ack, action, body }) => {
@@ -92,11 +87,7 @@ app.action(CustomAction.AddStatus, async ({ ack, action, body }) => {
 	await ack();
 	await createStatus(action.value);
 
-	await app.client.views.update({
-		view_id: body.view.id,
-		view: await buildStatusManagementView()
-	});
-
+	await showModal({ viewId: body.view.id });
 	await republishHomeView(body.user.id);
 });
 
@@ -116,11 +107,7 @@ app.action(CustomAction.DeleteStatus, async ({ ack, action, body }) => {
 	await ack();
 	await deleteStatus(Number(action.value));
 
-	await app.client.views.update({
-		view_id: body.view.id,
-		view: await buildStatusManagementView()
-	});
-
+	await showModal({ viewId: body.view.id });
 	await republishHomeView(body.user.id);
 });
 

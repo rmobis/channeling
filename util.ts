@@ -1,6 +1,6 @@
 import { getTasks, Task } from './db';
 import app from './index';
-import { buildHomeView } from './view';
+import { buildHomeView, buildStatusManagementView } from './view';
 
 export async function republishHomeView(user: string) {
 	const tasks = await getTasks();
@@ -9,6 +9,20 @@ export async function republishHomeView(user: string) {
 		user_id: user,
 		view: await buildHomeView(tasks),
 	});
+}
+
+export async function showModal({ triggerId, viewId } : { triggerId: string, viewId?: never } | { triggerId?: never, viewId: string }) {
+	if (viewId) {
+		await app.client.views.update({
+			view_id: viewId,
+			view: await buildStatusManagementView()
+		});
+	} else if (triggerId) {
+		await app.client.views.open({
+			trigger_id: triggerId,
+			view: await buildStatusManagementView()
+		});
+	}
 }
 
 export async function fetchTaskData(task: Task) {
