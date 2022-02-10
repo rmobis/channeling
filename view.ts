@@ -93,7 +93,7 @@ async function buildTaskBlocks(task: Task): Promise<(Block | KnownBlock)[]> {
 	const { message, profile } = await fetchTaskData(task);
 
 	const tagsMkdwn = task.tags.map((tag) => `\`${tag}\``).join(' ');
-	const statusStyling = STATUS_STYLING_MAP[task.status];
+	const statusStyling = STATUS_STYLING_MAP[task.status] ?? '';
 	const statusOptions = await buildStatusOptions(task);
 
 	if (!message || !profile) {
