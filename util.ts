@@ -29,10 +29,9 @@ export async function republishHomeView(user: string) {
 	});
 }
 
-// fetching every single message/user every single time doesn't really sound like a good idea,
-// but the alternative would be to cache it in the database and then we have to deal with cache
-// invalidation and what not; we'll leave it for now.
-async function buildTaskBlocks(task: Task): Promise<(Block | KnownBlock)[]> {
+async function fetchTaskData(task: Task) {
+	let message, profile;
+
 	const msgRes = await app.client.conversations.history({
 		channel: task.channel,
 		latest: task.ts,
@@ -40,30 +39,38 @@ async function buildTaskBlocks(task: Task): Promise<(Block | KnownBlock)[]> {
 		limit: 1,
 	});
 
-	if (msgRes.messages?.length !== 1) {
-		return [];
+	if (msgRes.messages?.length === 1) {
+		message = msgRes.messages[0];
+
+		const profRes = await app.client.users.profile.get({
+			user: message.user,
+		});
+
+		if (profRes.profile) {
+			profile = profRes.profile;
+		}
 	}
 
-	const msg = msgRes.messages[0];
+	return { message, profile };
+}
 
-	const profRes = await app.client.users.profile.get({
-		user: msg.user,
-	});
-
-	if (!profRes.profile) {
-		return [];
-	}
-
-	const prof = profRes.profile;
-
+async function buildTaskBlocks(task: Task): Promise<(Block | KnownBlock)[]> {
+	// fetching every single message/user every single time doesn't really sound like a good idea,
+	// but the alternative would be to cache it in the database and then we have to deal with cache
+	// invalidation and what not; we'll leave it for now.
+	const { message, profile } = await fetchTaskData(task);
 	const tagsMkdown = task.tags.map(tag => `\`${tag}\``).join(' ');
+
+	if (!message || !profile) {
+		return [];
+	}
 
 	return [
 		{
 			type: 'section',
 			text: {
 				type: 'mrkdwn',
-				text: `${msg.text}`
+				text: `${message.text}`
 			},
 			accessory: {
 				type: 'button',
@@ -81,12 +88,12 @@ async function buildTaskBlocks(task: Task): Promise<(Block | KnownBlock)[]> {
 			elements: [
 				{
 					type: 'image',
-					image_url: prof.image_24 ?? '',
-					alt_text: `${prof.display_name}`
+					image_url: profile.image_24 ?? '',
+					alt_text: `${profile.display_name}`
 				},
 				{
 					type: 'mrkdwn',
-					text: ` *${prof.display_name}*`
+					text: ` *${profile.display_name}*`
 				},
 				{
 					type: 'mrkdwn',
