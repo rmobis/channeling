@@ -7,6 +7,7 @@ import {
 } from '@slack/bolt';
 import { fetchTaskData } from './util';
 import { DefaultStatus, getStatus, getTasks, Status, Task } from './db';
+import { CustomAction } from 'index';
 
 const STATUS_STYLING_MAP: Record<string, string> = {
 	New: '_',
@@ -39,7 +40,7 @@ export async function buildHomeView(user: string): Promise<HomeView> {
 							value: 'manage-status',
 						},
 					],
-					action_id: 'main-overflow',
+					action_id: CustomAction.MainOverflow,
 				},
 			},
 			{
@@ -113,7 +114,7 @@ async function buildTaskBlocks(task: Task): Promise<(Block | KnownBlock)[]> {
 					text: 'Choose new status...',
 					emoji: true,
 				},
-				action_id: 'update_task_status',
+				action_id: CustomAction.UpdateTaskStatus,
 				options: statusOptions,
 			},
 		},
@@ -181,7 +182,7 @@ function buildStatusBlocks(status: Status): KnownBlock {
 				text: ':x:',
 			},
 			value: status.id.toString(),
-			action_id: 'delete-status',
+			action_id: CustomAction.DeleteStatus,
 		};
 	}
 

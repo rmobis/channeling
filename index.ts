@@ -8,6 +8,12 @@ const REACTIONS_MAP: Record<string, string[]> = {
 	ladybug: ['bug'],
 };
 
+export enum CustomAction {
+	UpdateTaskStatus = 'update-task-status',
+	DeleteStatus = 'delete-status'
+	MainOverflow = 'main-overflow'
+}
+
 const app = new App({
 	token: process.env.SLACK_BOT_TOKEN,
 	signingSecret: process.env.SLACK_SIGNING_SECRET,
@@ -42,7 +48,7 @@ app.event('app_home_opened', async ({ event }) => {
 	await republishHomeView(event.user);
 });
 
-app.action('update_task_status', async ({ ack, action, body }) => {
+app.action(CustomAction.UpdateTaskStatus, async ({ ack, action, body }) => {
 	if (action.type !== 'static_select') {
 		return;
 	}
@@ -55,7 +61,7 @@ app.action('update_task_status', async ({ ack, action, body }) => {
 	await republishHomeView(body.user.id);
 });
 
-app.action('main-overflow', async ({ ack, body, action }) => {
+app.action(CustomAction.MainOverflow, async ({ ack, body, action }) => {
 	if (body.type !== 'block_actions') {
 		return;
 	}
