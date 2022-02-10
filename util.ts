@@ -2,6 +2,11 @@ import { KnownBlock, HomeView, Block } from '@slack/bolt';
 import { getTasks, Task } from './db';
 import app from './index';
 
+const STATUS_STYLING_MAP: Record<string, string> = {
+	New: '_',
+	Completed: '~'
+};
+
 export async function republishHomeView(user: string) {
 	const tasks = await getTasks();
 	const taskBlocks = await Promise.all(tasks.map(task => buildTaskBlocks(task)));
@@ -59,7 +64,9 @@ async function buildTaskBlocks(task: Task): Promise<(Block | KnownBlock)[]> {
 	// but the alternative would be to cache it in the database and then we have to deal with cache
 	// invalidation and what not; we'll leave it for now.
 	const { message, profile } = await fetchTaskData(task);
-	const tagsMkdown = task.tags.map(tag => `\`${tag}\``).join(' ');
+
+	const tagsMkdwn = task.tags.map(tag => `\`${tag}\``).join(' ');
+	const statusStyling = STATUS_STYLING_MAP[task.status];
 
 	if (!message || !profile) {
 		return [];
@@ -80,7 +87,8 @@ async function buildTaskBlocks(task: Task): Promise<(Block | KnownBlock)[]> {
 					emoji: true,
 					text: 'Complete'
 				},
-				value: 'click_me_123'
+				action_id: 'complete_task',
+				value: task.id.toString()
 			}
 		},
 		{
@@ -97,11 +105,11 @@ async function buildTaskBlocks(task: Task): Promise<(Block | KnownBlock)[]> {
 				},
 				{
 					type: 'mrkdwn',
-					text: `*Status:* _${task.status}_`
+					text: `*Status:* ${statusStyling}${task.status}${statusStyling}`
 				},
 				{
 					type: 'mrkdwn',
-					text: `*Tags:* ${tagsMkdown}`
+					text: `*Tags:* ${tagsMkdwn}`
 				}
 			]
 		},

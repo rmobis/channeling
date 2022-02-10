@@ -64,3 +64,13 @@ export async function getTasks(): Promise<Task[]> {
 		...rest
 	}));
 }
+
+export async function completeTask(id: number) {
+	const db = await getDB();
+
+	await db.run(`
+		UPDATE task
+		SET status = "Completed"
+		WHERE id = ?
+	`, id);
+}
