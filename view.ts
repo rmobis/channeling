@@ -6,7 +6,7 @@ import {
 	ModalView,
 } from '@slack/bolt';
 import { fetchTaskData } from './util';
-import { DefaultStatus, getStatus, getTasks, Status, Task } from './db';
+import { DefaultStatus, getStatus, Status, Task } from './db';
 import { CustomAction } from './index';
 
 const STATUS_STYLING_MAP: Record<string, string> = {
@@ -14,8 +14,7 @@ const STATUS_STYLING_MAP: Record<string, string> = {
 	Completed: '~',
 };
 
-export async function buildHomeView(user: string): Promise<HomeView> {
-	const tasks = await getTasks();
+export async function buildHomeView(tasks: Task[]): Promise<HomeView> {
 	const taskBlocks = await Promise.all(
 		tasks.map((task) => buildTaskBlocks(task))
 	);
@@ -27,7 +26,7 @@ export async function buildHomeView(user: string): Promise<HomeView> {
 				type: 'section',
 				text: {
 					type: 'mrkdwn',
-					text: `Welcome to Channeling, <@${user}>!`,
+					text: `Welcome to Channeling!`,
 				},
 				accessory: {
 					type: 'overflow',

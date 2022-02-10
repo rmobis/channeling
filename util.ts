@@ -1,11 +1,13 @@
-import { Task } from './db';
+import { getTasks, Task } from './db';
 import app from './index';
 import { buildHomeView } from './view';
 
 export async function republishHomeView(user: string) {
+	const tasks = await getTasks();
+
 	await app.client.views.publish({
 		user_id: user,
-		view: await buildHomeView(user),
+		view: await buildHomeView(tasks),
 	});
 }
 
