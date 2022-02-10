@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { App } from '@slack/bolt';
-import { updateTaskStatus, storeTask } from './db';
+import { updateTaskStatus, storeTask, createStatus } from './db';
 import { republishHomeView } from './util';
 import { buildStatusManagementView } from './view';
 
@@ -8,10 +8,12 @@ const REACTIONS_MAP: Record<string, string[]> = {
 	ladybug: ['bug'],
 };
 
+
 export enum CustomAction {
 	UpdateTaskStatus = 'update-task-status',
-	DeleteStatus = 'delete-status'
-	MainOverflow = 'main-overflow'
+	DeleteStatus = 'delete-status',
+	MainOverflow = 'main-overflow',
+	AddStatus = "AddStatus"
 }
 
 const app = new App({
@@ -61,7 +63,7 @@ app.action(CustomAction.UpdateTaskStatus, async ({ ack, action, body }) => {
 	await republishHomeView(body.user.id);
 });
 
-app.action(CustomAction.MainOverflow, async ({ ack, body, action }) => {
+app.action(CustomAction.MainOverflow, async ({ ack, action, body }) => {
 	if (body.type !== 'block_actions') {
 		return;
 	}
@@ -72,6 +74,30 @@ app.action(CustomAction.MainOverflow, async ({ ack, body, action }) => {
 		view: await buildStatusManagementView()
 	});
 
+});
+
+app.action(CustomAction.AddStatus, async ({ ack, action, body }) => {
+	if (action.type !== 'plain_text_input') {
+		return;
+	}
+
+	if (body.type !== 'block_actions') {
+		return;
+	}
+
+	if (!body.view) {
+		return;
+	}
+
+	await ack();
+	await createStatus(action.value);
+
+	await app.client.views.update({
+		view_id: body.view.id,
+		view: await buildStatusManagementView()
+	});
+
+	await republishHomeView(body.user.id);
 });
 
 (async () => {

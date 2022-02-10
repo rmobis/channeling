@@ -117,3 +117,12 @@ export async function getStatus(): Promise<Status[]> {
 		FROM status
 	`);
 }
+
+export async function createStatus(name: string) {
+	const db = await getDB();
+
+	await db.run(`
+		INSERT INTO status (name)
+		VALUES (?)
+	`, name);
+}

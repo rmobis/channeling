@@ -7,7 +7,7 @@ import {
 } from '@slack/bolt';
 import { fetchTaskData } from './util';
 import { DefaultStatus, getStatus, getTasks, Status, Task } from './db';
-import { CustomAction } from 'index';
+import { CustomAction } from './index';
 
 const STATUS_STYLING_MAP: Record<string, string> = {
 	New: '_',
@@ -81,7 +81,22 @@ export async function buildStatusManagementView(): Promise<ModalView> {
 			{
 				type: 'divider',
 			},
-			...statusBlocks
+			...statusBlocks,
+			{
+				type: 'divider',
+			},
+			{
+				dispatch_action: true,
+				type: 'input',
+				element: {
+					type: 'plain_text_input',
+					action_id: CustomAction.AddStatus,
+				},
+				label: {
+					type: 'plain_text',
+					text: 'Add Status',
+				},
+			},
 		],
 	};
 }
@@ -157,7 +172,7 @@ async function buildStatusOptions(task: Task): Promise<PlainTextOption[]> {
 	return withoutCurrent.map((status) => ({
 		text: {
 			type: 'plain_text',
-			text: status.name
+			text: status.name,
 		},
 		// this is kind of a hack because we need to pass two bits of info to the action; not sure
 		// if there's a better way
@@ -171,10 +186,13 @@ function buildStatusBlocks(status: Status): KnownBlock {
 		text: {
 			type: 'mrkdwn',
 			text: `*${status.name}*`,
-		}
+		},
 	};
 
-	if (status.id !== DefaultStatus.New && status.id !== DefaultStatus.Completed) {
+	if (
+		status.id !== DefaultStatus.New &&
+		status.id !== DefaultStatus.Completed
+	) {
 		block.accessory = {
 			type: 'button',
 			text: {
