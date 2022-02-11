@@ -14,10 +14,12 @@
     "@slack/bolt": "^3.9.0",
     "@types/sqlite3": "^3.1.8",
     "dotenv": "^16.0.0",
+    "lodash": "^4.17.21",
     "sqlite": "^4.0.23",
     "typescript": "^4.5.5"
   },
   "devDependencies": {
+    "@types/lodash": "^4.14.178",
     "cross-env": "^7.0.3",
     "esbuild-register": "^3.3.2",
     "sqlite3": "^5.0.2",

@@ -1,12 +1,13 @@
 import 'dotenv/config';
 import { App } from '@slack/bolt';
-import { updateTaskStatus, storeTask, createStatus, deleteStatus } from './db';
+import { updateTaskStatus, createTaskOrUpdateTags, createStatus, deleteStatus } from './db';
 import { republishHomeView, showModal } from './util';
 
 const REACTIONS_MAP: Record<string, string[]> = {
-	ladybug: ['bug'],
+	ladybug: ['bug', 'qa'],
+	eyes: ['needs-review'],
+	mega: ['urgent']
 };
-
 
 export enum CustomAction {
 	UpdateTaskStatus = 'update-task-status',
@@ -23,7 +24,11 @@ const app = new App({
 	port: Number(process.env.PORT) || 3000,
 });
 
-app.event('reaction_added', async ({ event }) => {
+app.event(/reaction_(added|removed)/, async ({ event }) => {
+	if (event.type !== 'reaction_added' && event.type !== 'reaction_removed') {
+		return;
+	}
+
 	if (event.item.type !== 'message') {
 		return;
 	}
@@ -32,7 +37,7 @@ app.event('reaction_added', async ({ event }) => {
 		return;
 	}
 
-	await storeTask({
+	await createTaskOrUpdateTags({
 		channel: event.item.channel,
 		ts: event.item.ts,
 		tags: REACTIONS_MAP[event.reaction],

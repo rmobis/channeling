@@ -1,5 +1,6 @@
 import sqlite3 from 'sqlite3';
 import { Database, open } from 'sqlite';
+import { xor } from 'lodash';
 
 // Since this is mostly to test my knowledge around Slack,
 // I guess we can get away without an ORM
@@ -76,13 +77,29 @@ async function initDB(db: Database) {
 	`, DefaultStatus.New, DefaultStatus.Completed);
 }
 
-export async function storeTask({ channel, ts, tags }: Omit<Task, 'id' | 'status' | 'status_id'>) {
+export async function createTaskOrUpdateTags({ channel, ts, tags }: Omit<Task, 'id' | 'status' | 'status_id'>) {
 	const db = await getDB();
+	const task = await db.get(`
+		SELECT *
+		FROM task
+		WHERE
+			channel = ?
+			AND ts = ?
+	`, channel, ts);
 
-	await db.run(`
-		INSERT INTO task (channel, ts, tags)
-		VALUES (?, ?, ?)
-	`, channel, ts, tags.join(','));
+	if (!task) {
+		await db.run(`
+			INSERT INTO task (channel, ts, tags)
+			VALUES (?, ?, ?)
+		`, channel, ts, tags.join(','));
+	} else {
+		await db.run(`
+			UPDATE task
+			SET tags = ?
+			WHERE
+				id = ?
+		`, xor(tags, task.tags.split(',')).join(','), task.id);
+	}
 }
 
 export async function getTasks(): Promise<Task[]> {
@@ -97,7 +114,7 @@ export async function getTasks(): Promise<Task[]> {
 	`);
 
 	return res.map(({ tags, ...rest }) => ({
-		tags: tags.split(','),
+		tags: tags.split(',').filter(Boolean),
 		...rest
 	}));
 }
