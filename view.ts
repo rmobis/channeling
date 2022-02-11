@@ -181,18 +181,17 @@ async function buildStatusSelectOptions(task: Task): Promise<PlainTextOption[]> 
 }
 
 function buildStatusBlocks(status: Status): KnownBlock {
+	const isDefault = status.id === DefaultStatus.New || status.id === DefaultStatus.Completed;
+	const statusStyling = isDefault ? '*' : '';
 	const block: KnownBlock = {
 		type: 'section',
 		text: {
 			type: 'mrkdwn',
-			text: `*${status.name}*`,
+			text: `${statusStyling}${status.name}${statusStyling}`,
 		},
 	};
 
-	if (
-		status.id !== DefaultStatus.New &&
-		status.id !== DefaultStatus.Completed
-	) {
+	if (!isDefault) {
 		block.accessory = {
 			type: 'button',
 			text: {
